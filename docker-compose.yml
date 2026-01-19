@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: apartment_db
+    environment:
+      POSTGRES_DB: apartment_rental
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: apartment_web
+    environment:
+      DATABASE_URL: postgresql://postgres:tiger@db:5432/apartment_rental
+      SECRET_KEY: 5a87e33b7696f8b738674e03383471f0c38d58f421abb2d9ba6561da4b71bfc4
+      FLASK_ENV: development
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 5 &&
+        echo 'Initializing database...' &&
+        flask init-db &&
+        echo 'Seeding database...' &&
+        flask seed-db &&
+        echo 'Starting application...' &&
+        python app.py
+      "
+
+volumes:
+  postgres_data:

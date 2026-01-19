@@ -1,5 +1,3 @@
-# apartment-rental-portal
-
 # Residential Apartment Rental Portal
 
 A full-stack web application for managing apartment rentals with user and admin portals.
