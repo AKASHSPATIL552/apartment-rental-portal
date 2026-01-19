@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+    <div class="max-w-7xl mx-auto px-4 py-20 text-center">
+        <h1 class="text-5xl font-bold mb-6">Find Your Perfect Home</h1>
+        <p class="text-xl mb-8">Browse modern apartments with world-class amenities</p>
+        <a href="/browse" class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 inline-block">Browse Available Flats</a>
+    </div>
+</div>
+
+<div class="max-w-7xl mx-auto px-4 py-16">
+    <h2 class="text-3xl font-bold text-center mb-12">Our Amenities</h2>
+    <div id="amenitiesGrid" class="grid md:grid-cols-4 gap-6">
+        <div class="animate-pulse bg-gray-200 h-40 rounded-lg"></div>
+        <div class="animate-pulse bg-gray-200 h-40 rounded-lg"></div>
+        <div class="animate-pulse bg-gray-200 h-40 rounded-lg"></div>
+        <div class="animate-pulse bg-gray-200 h-40 rounded-lg"></div>
+    </div>
+</div>
+
+<div class="bg-gray-100 py-16">
+    <div class="max-w-7xl mx-auto px-4">
+        <h2 class="text-3xl font-bold text-center mb-12">Why Choose Us?</h2>
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="text-4xl mb-4">🏢</div>
+                <h3 class="text-xl font-semibold mb-2">Modern Towers</h3>
+                <p class="text-gray-600">State-of-the-art residential towers with premium finishes</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="text-4xl mb-4">🔒</div>
+                <h3 class="text-xl font-semibold mb-2">24/7 Security</h3>
+                <p class="text-gray-600">Round-the-clock security for your peace of mind</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="text-4xl mb-4">📍</div>
+                <h3 class="text-xl font-semibold mb-2">Prime Location</h3>
+                <p class="text-gray-600">Easy access to shopping, dining, and transportation</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadAmenities() {
+        try {
+            const response = await fetch('/api/amenities');
+            const amenities = await response.json();
+            
+            const grid = document.getElementById('amenitiesGrid');
+            grid.innerHTML = amenities.map(a => `
+                <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition text-center">
+                    <div class="text-4xl mb-3"><i class="fas fa-${a.icon}"></i></div>
+                    <h3 class="font-semibold text-lg mb-2">${a.name}</h3>
+                    <p class="text-gray-600 text-sm">${a.description || ''}</p>
+                    ${!a.is_available ? '<span class="text-red-500 text-xs">Under Maintenance</span>' : ''}
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Failed to load amenities:', error);
+        }
+    }
+
+    loadAmenities();
+</script>
+{% endblock %}

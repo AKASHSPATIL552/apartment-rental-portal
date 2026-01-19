@@ -1,0 +1,552 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Apartment Rental Portal{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-r from-purple-600 to-purple-800 text-white py-8">
+    <div class="max-w-7xl mx-auto px-4">
+        <h1 class="text-4xl font-bold mb-2">Admin Dashboard</h1>
+        <p class="text-lg opacity-90">Manage your apartment rental portal</p>
+    </div>
+</div>
+
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Stats Cards -->
+    <div class="grid md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Total Units</p>
+                    <p id="statTotalUnits" class="text-3xl font-bold text-blue-600">-</p>
+                </div>
+                <i class="fas fa-building text-4xl text-blue-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Occupied</p>
+                    <p id="statOccupied" class="text-3xl font-bold text-green-600">-</p>
+                </div>
+                <i class="fas fa-home text-4xl text-green-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Pending Bookings</p>
+                    <p id="statPending" class="text-3xl font-bold text-yellow-600">-</p>
+                </div>
+                <i class="fas fa-clock text-4xl text-yellow-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Occupancy Rate</p>
+                    <p id="statOccupancyRate" class="text-3xl font-bold text-purple-600">-</p>
+                </div>
+                <i class="fas fa-chart-line text-4xl text-purple-200"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bg-white rounded-lg shadow mb-8">
+        <div class="border-b">
+            <div class="flex space-x-1 p-1">
+                <button onclick="switchTab('bookings')" id="tab-bookings" 
+                    class="px-6 py-3 rounded-t font-medium bg-blue-600 text-white">
+                    Bookings
+                </button>
+                <button onclick="switchTab('towers')" id="tab-towers"
+                    class="px-6 py-3 rounded-t font-medium hover:bg-gray-100">
+                    Towers
+                </button>
+                <button onclick="switchTab('units')" id="tab-units"
+                    class="px-6 py-3 rounded-t font-medium hover:bg-gray-100">
+                    Units
+                </button>
+                <button onclick="switchTab('amenities')" id="tab-amenities"
+                    class="px-6 py-3 rounded-t font-medium hover:bg-gray-100">
+                    Amenities
+                </button>
+            </div>
+        </div>
+
+        <!-- Bookings Tab -->
+        <div id="content-bookings" class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Booking Requests</h2>
+                <div class="space-x-2">
+                    <button onclick="filterBookings('all')" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">All</button>
+                    <button onclick="filterBookings('pending')" class="px-4 py-2 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200">Pending</button>
+                    <button onclick="filterBookings('approved')" class="px-4 py-2 bg-green-100 text-green-800 rounded hover:bg-green-200">Approved</button>
+                    <button onclick="filterBookings('declined')" class="px-4 py-2 bg-red-100 text-red-800 rounded hover:bg-red-200">Declined</button>
+                </div>
+            </div>
+            <div id="bookingsList" class="space-y-4">
+                <div class="animate-pulse bg-gray-200 h-24 rounded"></div>
+            </div>
+        </div>
+
+        <!-- Towers Tab -->
+        <div id="content-towers" class="p-6 hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Towers</h2>
+                <button onclick="showAddTowerForm()" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    <i class="fas fa-plus mr-2"></i>Add Tower
+                </button>
+            </div>
+            <div id="towersList" class="grid md:grid-cols-2 gap-4"></div>
+        </div>
+
+        <!-- Units Tab -->
+        <div id="content-units" class="p-6 hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Units</h2>
+                <button onclick="showAddUnitForm()" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    <i class="fas fa-plus mr-2"></i>Add Unit
+                </button>
+            </div>
+            <div id="unitsList" class="space-y-4"></div>
+        </div>
+
+        <!-- Amenities Tab -->
+        <div id="content-amenities" class="p-6 hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Amenities</h2>
+                <button onclick="showAddAmenityForm()" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    <i class="fas fa-plus mr-2"></i>Add Amenity
+                </button>
+            </div>
+            <div id="amenitiesList" class="grid md:grid-cols-3 gap-4"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="modalTitle" class="text-2xl font-bold"></h3>
+            <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        <div id="modalContent"></div>
+    </div>
+</div>
+
+<script>
+    let currentTab = 'bookings';
+    let allBookings = [];
+    let currentFilter = 'all';
+
+    function switchTab(tab) {
+        currentTab = tab;
+        
+        ['bookings', 'towers', 'units', 'amenities'].forEach(t => {
+            document.getElementById(`tab-${t}`).className = 'px-6 py-3 rounded-t font-medium hover:bg-gray-100';
+            document.getElementById(`content-${t}`).classList.add('hidden');
+        });
+        
+        document.getElementById(`tab-${tab}`).className = 'px-6 py-3 rounded-t font-medium bg-blue-600 text-white';
+        document.getElementById(`content-${tab}`).classList.remove('hidden');
+        
+        if (tab === 'bookings') loadBookings();
+        if (tab === 'towers') loadTowers();
+        if (tab === 'units') loadUnits();
+        if (tab === 'amenities') loadAmenities();
+    }
+
+    async function loadStats() {
+        try {
+            const [occupancyRes, bookingRes] = await Promise.all([
+                fetch('/api/reports/occupancy'),
+                fetch('/api/reports/bookings')
+            ]);
+            
+            const occupancy = await occupancyRes.json();
+            const bookings = await bookingRes.json();
+            
+            document.getElementById('statTotalUnits').textContent = occupancy.total_units;
+            document.getElementById('statOccupied').textContent = occupancy.occupied_units;
+            document.getElementById('statPending').textContent = bookings.pending;
+            document.getElementById('statOccupancyRate').textContent = occupancy.occupancy_rate + '%';
+        } catch (error) {
+            console.error('Failed to load stats:', error);
+        }
+    }
+
+    async function loadBookings() {
+        try {
+            const response = await fetch('/api/bookings');
+            allBookings = await response.json();
+            filterBookings(currentFilter);
+        } catch (error) {
+            console.error('Failed to load bookings:', error);
+        }
+    }
+
+    function filterBookings(status) {
+        currentFilter = status;
+        const filtered = status === 'all' ? allBookings : allBookings.filter(b => b.status === status);
+        
+        const container = document.getElementById('bookingsList');
+        
+        if (filtered.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-8">No bookings found</p>';
+            return;
+        }
+        
+        container.innerHTML = filtered.map(b => `
+            <div class="bg-gray-50 p-4 rounded-lg border">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h4 class="font-semibold text-lg">${b.tower_name} - ${b.unit_number}</h4>
+                        <p class="text-sm text-gray-600">Tenant: ${b.username} (ID: ${b.user_id})</p>
+                        <p class="text-sm text-gray-600">Move-in: ${new Date(b.move_in_date).toLocaleDateString()}</p>
+                        <p class="text-sm text-gray-600">Requested: ${new Date(b.booking_date).toLocaleDateString()}</p>
+                    </div>
+                    <span class="px-3 py-1 rounded text-sm font-medium ${
+                        b.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        b.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        'bg-red-100 text-red-800'
+                    }">
+                        ${b.status.charAt(0).toUpperCase() + b.status.slice(1)}
+                    </span>
+                </div>
+                ${b.notes ? `<p class="text-sm mb-3 text-gray-700"><strong>Notes:</strong> ${b.notes}</p>` : ''}
+                ${b.admin_notes ? `<p class="text-sm mb-3 text-blue-700"><strong>Admin Notes:</strong> ${b.admin_notes}</p>` : ''}
+                ${b.status === 'pending' ? `
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="updateBooking(${b.id}, 'approved')" 
+                            class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700">
+                            Approve
+                        </button>
+                        <button onclick="updateBooking(${b.id}, 'declined')" 
+                            class="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700">
+                            Decline
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+    }
+
+    async function updateBooking(bookingId, status) {
+        const notes = prompt('Add admin notes (optional):');
+        
+        try {
+            const response = await fetch(`/api/bookings/${bookingId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status, admin_notes: notes })
+            });
+            
+            if (response.ok) {
+                alert('Booking updated successfully');
+                loadBookings();
+                loadStats();
+            }
+        } catch (error) {
+            alert('Failed to update booking');
+        }
+    }
+
+    async function loadTowers() {
+        try {
+            const response = await fetch('/api/towers');
+            const towers = await response.json();
+            
+            const container = document.getElementById('towersList');
+            container.innerHTML = towers.map(t => `
+                <div class="bg-gray-50 p-4 rounded-lg border">
+                    <h4 class="font-semibold text-lg">${t.name}</h4>
+                    <p class="text-sm text-gray-600">${t.floors} Floors | ${t.unit_count} Units</p>
+                    ${t.description ? `<p class="text-sm text-gray-600 mt-2">${t.description}</p>` : ''}
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="editTower(${t.id})" class="flex-1 bg-blue-600 text-white py-1 rounded hover:bg-blue-700 text-sm">
+                            Edit
+                        </button>
+                        <button onclick="deleteTower(${t.id})" class="flex-1 bg-red-600 text-white py-1 rounded hover:bg-red-700 text-sm">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Failed to load towers:', error);
+        }
+    }
+
+    function showAddTowerForm() {
+        showModal('Add Tower', `
+            <form id="towerForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Tower Name</label>
+                    <input type="text" name="name" required class="w-full px-4 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Number of Floors</label>
+                    <input type="number" name="floors" required class="w-full px-4 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Description</label>
+                    <textarea name="description" rows="3" class="w-full px-4 py-2 border rounded-lg"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+                    Add Tower
+                </button>
+            </form>
+        `);
+        
+        document.getElementById('towerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target));
+            
+            try {
+                const response = await fetch('/api/towers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    closeModal();
+                    loadTowers();
+                    loadStats();
+                }
+            } catch (error) {
+                alert('Failed to add tower');
+            }
+        });
+    }
+
+    async function deleteTower(id) {
+        if (!confirm('Delete this tower and all its units?')) return;
+        
+        try {
+            await fetch(`/api/towers/${id}`, { method: 'DELETE' });
+            loadTowers();
+            loadStats();
+        } catch (error) {
+            alert('Failed to delete tower');
+        }
+    }
+
+    async function loadUnits() {
+        try {
+            const response = await fetch('/api/units');
+            const units = await response.json();
+            
+            const container = document.getElementById('unitsList');
+            container.innerHTML = units.map(u => `
+                <div class="bg-gray-50 p-4 rounded-lg border flex justify-between items-start">
+                    <div>
+                        <h4 class="font-semibold">${u.tower_name} - ${u.unit_number}</h4>
+                        <p class="text-sm text-gray-600">
+                            Floor ${u.floor} | ${u.bedrooms} BR, ${u.bathrooms} BA | ${u.area_sqft} sqft | $${u.rent_amount}/mo
+                        </p>
+                        <span class="text-xs px-2 py-1 rounded ${u.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${u.is_available ? 'Available' : 'Occupied'}
+                        </span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editUnit(${u.id})" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm">
+                            Edit
+                        </button>
+                        <button onclick="deleteUnit(${u.id})" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Failed to load units:', error);
+        }
+    }
+
+    async function showAddUnitForm() {
+        const towersRes = await fetch('/api/towers');
+        const towers = await towersRes.json();
+        
+        showModal('Add Unit', `
+            <form id="unitForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Tower</label>
+                    <select name="tower_id" required class="w-full px-4 py-2 border rounded-lg">
+                        ${towers.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Unit Number</label>
+                        <input type="text" name="unit_number" required class="w-full px-4 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Floor</label>
+                        <input type="number" name="floor" required class="w-full px-4 py-2 border rounded-lg">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Bedrooms</label>
+                        <input type="number" name="bedrooms" required class="w-full px-4 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Bathrooms</label>
+                        <input type="number" name="bathrooms" required class="w-full px-4 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Area (sqft)</label>
+                        <input type="number" name="area_sqft" class="w-full px-4 py-2 border rounded-lg">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Rent Amount</label>
+                    <input type="number" step="0.01" name="rent_amount" required class="w-full px-4 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Description</label>
+                    <textarea name="description" rows="2" class="w-full px-4 py-2 border rounded-lg"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+                    Add Unit
+                </button>
+            </form>
+        `);
+        
+        document.getElementById('unitForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target));
+            
+            try {
+                await fetch('/api/units', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                closeModal();
+                loadUnits();
+                loadStats();
+            } catch (error) {
+                alert('Failed to add unit');
+            }
+        });
+    }
+
+    async function deleteUnit(id) {
+        if (!confirm('Delete this unit?')) return;
+        await fetch(`/api/units/${id}`, { method: 'DELETE' });
+        loadUnits();
+        loadStats();
+    }
+
+    async function loadAmenities() {
+        try {
+            const response = await fetch('/api/amenities');
+            const amenities = await response.json();
+            
+            const container = document.getElementById('amenitiesList');
+            container.innerHTML = amenities.map(a => `
+                <div class="bg-gray-50 p-4 rounded-lg border">
+                    <div class="text-3xl mb-2"><i class="fas fa-${a.icon}"></i></div>
+                    <h4 class="font-semibold">${a.name}</h4>
+                    <p class="text-sm text-gray-600">${a.description || ''}</p>
+                    <span class="text-xs px-2 py-1 rounded ${a.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                        ${a.is_available ? 'Available' : 'Unavailable'}
+                    </span>
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="toggleAmenity(${a.id}, ${!a.is_available})" 
+                            class="flex-1 bg-blue-600 text-white py-1 rounded hover:bg-blue-700 text-sm">
+                            ${a.is_available ? 'Disable' : 'Enable'}
+                        </button>
+                        <button onclick="deleteAmenity(${a.id})" 
+                            class="flex-1 bg-red-600 text-white py-1 rounded hover:bg-red-700 text-sm">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Failed to load amenities:', error);
+        }
+    }
+
+    function showAddAmenityForm() {
+        showModal('Add Amenity', `
+            <form id="amenityForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Name</label>
+                    <input type="text" name="name" required class="w-full px-4 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Description</label>
+                    <textarea name="description" rows="2" class="w-full px-4 py-2 border rounded-lg"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Icon (Font Awesome name)</label>
+                    <input type="text" name="icon" placeholder="e.g., swimming-pool, dumbbell" class="w-full px-4 py-2 border rounded-lg">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+                    Add Amenity
+                </button>
+            </form>
+        `);
+        
+        document.getElementById('amenityForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target));
+            
+            try {
+                await fetch('/api/amenities', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                closeModal();
+                loadAmenities();
+            } catch (error) {
+                alert('Failed to add amenity');
+            }
+        });
+    }
+
+    async function toggleAmenity(id, isAvailable) {
+        try {
+            await fetch(`/api/amenities/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_available: isAvailable })
+            });
+            loadAmenities();
+        } catch (error) {
+            alert('Failed to update amenity');
+        }
+    }
+
+    async function deleteAmenity(id) {
+        if (!confirm('Delete this amenity?')) return;
+        await fetch(`/api/amenities/${id}`, { method: 'DELETE' });
+        loadAmenities();
+    }
+
+    function showModal(title, content) {
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalContent').innerHTML = content;
+        document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('modal').classList.add('hidden');
+    }
+
+    loadStats();
+    loadBookings();
+</script>
+{% endblock %}

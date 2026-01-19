@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Apartment Rental Portal{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/" class="text-2xl font-bold">🏢 RentHub</a>
+                    <div class="hidden md:flex space-x-4">
+                        <a href="/" class="hover:bg-blue-700 px-3 py-2 rounded">Home</a>
+                        <a href="/browse" class="hover:bg-blue-700 px-3 py-2 rounded">Browse Flats</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4" id="navAuth">
+                    <a href="/login" class="hover:bg-blue-700 px-4 py-2 rounded">Login</a>
+                    <a href="/register" class="bg-white text-blue-600 px-4 py-2 rounded font-medium hover:bg-gray-100">Register</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-gray-800 text-white mt-20">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="grid md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">RentHub</h3>
+                    <p class="text-gray-400">Your trusted apartment rental portal</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="/" class="hover:text-white">Home</a></li>
+                        <li><a href="/browse" class="hover:text-white">Browse</a></li>
+                        <li><a href="/login" class="hover:text-white">Login</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Contact</h4>
+                    <p class="text-gray-400">Email: info@renthub.com</p>
+                    <p class="text-gray-400">Phone: 1234567890</p>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>RentHub</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Check authentication status
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/me');
+                if (response.ok) {
+                    const user = await response.json();
+                    updateNavForLoggedIn(user);
+                }
+            } catch (error) {
+                console.log('Not authenticated');
+            }
+        }
+
+        function updateNavForLoggedIn(user) {
+            const navAuth = document.getElementById('navAuth');
+            navAuth.innerHTML = `
+                <span class="text-sm">Welcome, ${user.username}</span>
+                ${user.is_admin ? '<a href="/admin" class="hover:bg-blue-700 px-3 py-2 rounded">Admin</a>' : ''}
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded">Logout</button>
+            `;
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/';
+        }
+
+        checkAuth();
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

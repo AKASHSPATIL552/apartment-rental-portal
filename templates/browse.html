@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Flats - Apartment Rental Portal{% endblock %}
+
+{% block content %}
+<div class="bg-blue-600 text-white py-8">
+    <div class="max-w-7xl mx-auto px-4">
+        <h1 class="text-4xl font-bold mb-4">Available Apartments</h1>
+        <p class="text-lg">Find your perfect home from our selection</p>
+    </div>
+</div>
+
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="mb-6 flex gap-4">
+        <div class="flex-1">
+            <input type="text" id="searchInput" placeholder="Search by unit number or tower..."
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+        </div>
+        <button onclick="toggleFilters()" class="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+            <i class="fas fa-filter"></i> Filters
+        </button>
+    </div>
+    
+    <div id="filters" class="hidden mb-6 p-4 bg-gray-100 rounded-lg">
+        <div class="grid md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-2">Bedrooms</label>
+                <select id="bedroomFilter" class="w-full px-3 py-2 border rounded-lg">
+                    <option value="">All</option>
+                    <option value="1">1 BR</option>
+                    <option value="2">2 BR</option>
+                    <option value="3">3 BR</option>
+                    <option value="4">4+ BR</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Max Rent</label>
+                <input type="number" id="rentFilter" placeholder="Max rent"
+                    class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Tower</label>
+                <select id="towerFilter" class="w-full px-3 py-2 border rounded-lg">
+                    <option value="">All Towers</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button onclick="applyFilters()" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                    Apply Filters
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="unitsGrid" class="grid md:grid-cols-3 gap-6">
+        <div class="animate-pulse bg-gray-200 h-64 rounded-lg"></div>
+        <div class="animate-pulse bg-gray-200 h-64 rounded-lg"></div>
+        <div class="animate-pulse bg-gray-200 h-64 rounded-lg"></div>
+    </div>
+</div>
+
+<!-- Booking Modal -->
+<div id="bookingModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h3 class="text-2xl font-bold mb-4">Request Booking</h3>
+        <div id="modalMessage" class="hidden mb-4 p-3 rounded"></div>
+        <form id="bookingForm" class="space-y-4">
+            <input type="hidden" id="bookingUnitId">
+            <div id="unitDetails" class="mb-4 p-4 bg-gray-50 rounded"></div>
+            
+            <div>
+                <label class="block text-sm font-medium mb-2">Move-in Date</label>
+                <input type="date" name="move_in_date" required
+                    class="w-full px-4 py-2 border rounded-lg">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium mb-2">Notes (Optional)</label>
+                <textarea name="notes" rows="3"
+                    class="w-full px-4 py-2 border rounded-lg"></textarea>
+            </div>
+            
+            <div class="flex gap-3">
+                <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+                    Submit Request
+                </button>
+                <button type="button" onclick="closeBookingModal()" class="flex-1 bg-gray-300 py-2 rounded-lg hover:bg-gray-400">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- My Bookings Section -->
+<div class="max-w-7xl mx-auto px-4 py-8 border-t mt-8">
+    <h2 class="text-2xl font-bold mb-6">My Booking Requests</h2>
+    <div id="myBookings" class="space-y-4">
+        <p class="text-gray-500">Login to view your booking requests</p>
+    </div>
+</div>
+
+<script>
+    let allUnits = [];
+    let currentUser = null;
+
+    async function checkUser() {
+        try {
+            const response = await fetch('/api/me');
+            if (response.ok) {
+                currentUser = await response.json();
+                loadMyBookings();
+            }
+        } catch (error) {
+            console.log('User not logged in');
+        }
+    }
+
+    async function loadUnits() {
+        try {
+            const response = await fetch('/api/units?available=true');
+            allUnits = await response.json();
+            displayUnits(allUnits);
+            
+            // Load towers for filter
+            const towersResponse = await fetch('/api/towers');
+            const towers = await towersResponse.json();
+            const towerFilter = document.getElementById('towerFilter');
+            towers.forEach(t => {
+                const option = document.createElement('option');
+                option.value = t.name;
+                option.textContent = t.name;
+                towerFilter.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Failed to load units:', error);
+        }
+    }
+
+    function displayUnits(units) {
+        const grid = document.getElementById('unitsGrid');
+        
+        if (units.length === 0) {
+            grid.innerHTML = '<div class="col-span-3 text-center text-gray-500 py-12">No units found</div>';
+            return;
+        }
+        
+        grid.innerHTML = units.map(unit => `
+            <div class="bg-white rounded-lg shadow hover:shadow-xl transition overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4">
+                    <h3 class="text-xl font-bold">${unit.tower_name} - ${unit.unit_number}</h3>
+                    <p class="text-sm opacity-90">Floor ${unit.floor}</p>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-bed text-gray-400"></i>
+                            <span>${unit.bedrooms} Beds</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-bath text-gray-400"></i>
+                            <span>${unit.bathrooms} Baths</span>
+                        </div>
+                        <div class="flex items-center gap-2 col-span-2">
+                            <i class="fas fa-ruler-combined text-gray-400"></i>
+                            <span>${unit.area_sqft || 'N/A'} sqft</span>
+                        </div>
+                    </div>
+                    
+                    ${unit.description ? `<p class="text-sm text-gray-600 mb-3">${unit.description}</p>` : ''}
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl font-bold text-blue-600">$${unit.rent_amount}</span>
+                        <span class="text-sm text-gray-500">/month</span>
+                    </div>
+                    
+                    <button onclick="openBookingModal(${unit.id})" 
+                        class="w-full mt-4 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                        Request Booking
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function toggleFilters() {
+        const filters = document.getElementById('filters');
+        filters.classList.toggle('hidden');
+    }
+
+    function applyFilters() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const bedrooms = document.getElementById('bedroomFilter').value;
+        const maxRent = document.getElementById('rentFilter').value;
+        const tower = document.getElementById('towerFilter').value;
+        
+        let filtered = allUnits.filter(unit => {
+            const matchSearch = unit.unit_number.toLowerCase().includes(search) || 
+                               unit.tower_name.toLowerCase().includes(search);
+            const matchBedrooms = !bedrooms || unit.bedrooms == bedrooms;
+            const matchRent = !maxRent || unit.rent_amount <= parseFloat(maxRent);
+            const matchTower = !tower || unit.tower_name === tower;
+            
+            return matchSearch && matchBedrooms && matchRent && matchTower;
+        });
+        
+        displayUnits(filtered);
+    }
+
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+
+    function openBookingModal(unitId) {
+        if (!currentUser) {
+            alert('Please login to request a booking');
+            window.location.href = '/login';
+            return;
+        }
+        
+        const unit = allUnits.find(u => u.id === unitId);
+        document.getElementById('bookingUnitId').value = unitId;
+        document.getElementById('unitDetails').innerHTML = `
+            <h4 class="font-semibold">${unit.tower_name} - ${unit.unit_number}</h4>
+            <p class="text-sm text-gray-600">${unit.bedrooms} BR, ${unit.bathrooms} BA | $${unit.rent_amount}/month</p>
+        `;
+        document.getElementById('bookingModal').classList.remove('hidden');
+    }
+
+    function closeBookingModal() {
+        document.getElementById('bookingModal').classList.add('hidden');
+        document.getElementById('bookingForm').reset();
+        document.getElementById('modalMessage').classList.add('hidden');
+    }
+
+    document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData);
+        data.unit_id = parseInt(document.getElementById('bookingUnitId').value);
+        
+        const messageDiv = document.getElementById('modalMessage');
+        
+        try {
+            const response = await fetch('/api/bookings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                messageDiv.className = 'block mb-4 p-3 rounded bg-green-100 text-green-700';
+                messageDiv.textContent = 'Booking request submitted successfully!';
+                setTimeout(() => {
+                    closeBookingModal();
+                    loadMyBookings();
+                }, 2000);
+            } else {
+                messageDiv.className = 'block mb-4 p-3 rounded bg-red-100 text-red-700';
+                messageDiv.textContent = result.error || 'Failed to submit booking';
+            }
+        } catch (error) {
+            messageDiv.className = 'block mb-4 p-3 rounded bg-red-100 text-red-700';
+            messageDiv.textContent = 'Network error. Please try again.';
+        }
+    });
+
+    async function loadMyBookings() {
+        if (!currentUser) return;
+        
+        try {
+            const response = await fetch('/api/bookings');
+            const bookings = await response.json();
+            
+            const container = document.getElementById('myBookings');
+            
+            if (bookings.length === 0) {
+                container.innerHTML = '<p class="text-gray-500">No booking requests yet</p>';
+                return;
+            }
+            
+            container.innerHTML = bookings.map(b => `
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-semibold">${b.tower_name} - ${b.unit_number}</h4>
+                            <p class="text-sm text-gray-600">Move-in: ${new Date(b.move_in_date).toLocaleDateString()}</p>
+                            <p class="text-sm text-gray-600">Requested: ${new Date(b.booking_date).toLocaleDateString()}</p>
+                            ${b.notes ? `<p class="text-sm text-gray-600 mt-1">Note: ${b.notes}</p>` : ''}
+                        </div>
+                        <span class="px-3 py-1 rounded text-sm font-medium ${
+                            b.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            b.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            'bg-red-100 text-red-800'
+                        }">
+                            ${b.status.charAt(0).toUpperCase() + b.status.slice(1)}
+                        </span>
+                    </div>
+                    ${b.admin_notes ? `<p class="mt-2 text-sm text-gray-600 italic">Admin: ${b.admin_notes}</p>` : ''}
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Failed to load bookings:', error);
+        }
+    }
+
+    checkUser();
+    loadUnits();
+</script>
+{% endblock %}
